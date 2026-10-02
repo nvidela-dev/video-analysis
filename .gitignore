@@ -4,3 +4,4 @@ data/
 .env
 test-results/
 playwright-report/
+samples/*.mp4

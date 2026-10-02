@@ -98,3 +98,7 @@ Core tests cover timezones, asymmetric windows, offsets, overlapping/ongoing eve
 ## Next useful steps
 
 Plug in one real camera and a POS export, measure clock drift, and manually review a few known sales before adding heuristics. Then consider durable event ingestion, indexed Postgres queries, idempotent import IDs, review notes, and clip preservation when needed.
+
+## Connected local sample
+
+This checkout now mounts `samples/` read-only into Frigate and loops `barista-solo.mp4` as `counter`. The local `.env` points the app to `http://frigate:5000`. Run `docker compose --profile camera up -d` to start it. Create transactions using the current replay time and wait for the after-window to finish before reviewing. Stop the replay with `docker compose stop frigate`; it records continuously while running.

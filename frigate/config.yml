@@ -1,6 +1,6 @@
 database:
   path: /config/db/frigate.db
-# Replace the RTSP URL before enabling the camera profile.
+# Replay the local sample as a camera.
 mqtt:
   enabled: false
 detectors:
@@ -10,9 +10,11 @@ cameras:
   counter:
     ffmpeg:
       inputs:
-        - path: rtsp://REPLACE_WITH_CAMERA_STREAM
+        - path: /samples/barista-solo.mp4
+          input_args: -re -stream_loop -1 -fflags +genpts
           roles: [detect, record]
     detect:
+      enabled: true
       width: 640
       height: 360
       fps: 5
