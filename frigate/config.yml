@@ -26,15 +26,15 @@ cameras:
         days: 2
         mode: all
     zones:
-      behind_counter:
+      frame_left:
         coordinates: 0.20,0.28,0.53,0.28,0.53,1,0.14,1
         objects: [person]
         inertia: 3
-      customer_side:
+      frame_right:
         coordinates: 0.69,0.48,1,0.48,1,1,0.59,1
         objects: [person]
         inertia: 3
-      doorway:
+      frame_upper_right:
         coordinates: 0.76,0.30,0.97,0.30,0.97,0.84,0.74,0.84
         objects: [person]
         inertia: 3
