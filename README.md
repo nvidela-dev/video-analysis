@@ -104,3 +104,5 @@ Plug in one real camera and a POS export, measure clock drift, and manually revi
 This checkout now mounts `samples/` read-only into Frigate and loops `barista-solo.mp4` as `counter`. The local `.env` points the app to `http://frigate:5000`. Run `docker compose --profile camera up -d` to start it. Create transactions using the current replay time and wait for the after-window to finish before reviewing. Stop the replay with `docker compose stop frigate`; it records continuously while running.
 
 Verified the sample replay against Frigate 0.16.2: person events, persisted recordings, and a full approximately 60-second MP4 through the backend. Allow extra time for recording segments to be indexed after the window ends.
+
+Frigate streams fragmented MP4: the browser can initially report a short duration, then extend it as it receives the clip. Verified accelerated browser playback reaches the full 61.9-second test clip without errors.

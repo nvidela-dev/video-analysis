@@ -37,7 +37,7 @@ export function createApp(store:Store,options:{frigateUrl?:string;frigateToken?:
   if(!frigate)return res.status(503).json({error:'Frigate is not configured'});
   const w=videoWindow(t.timestamp,store.state.settings.beforeSeconds,store.state.settings.afterSeconds,c.offsetSeconds);
   // Frigate generates this clip dynamically. Forwarding browser Range headers
-  // can produce a partial generated MP4 with misleading duration. Stream it whole.
+  // is unnecessary for this streaming endpoint. Stream the generated clip whole.
   const headers:Record<string,string>={...frigate.headers()};
   const controller=new AbortController();req.on('aborted',()=>controller.abort());res.on('close',()=>controller.abort());
   const response=await fetch(frigate.url(frigate.clipPath(c,w)),{headers,signal:AbortSignal.any([controller.signal,AbortSignal.timeout(120000)])});
