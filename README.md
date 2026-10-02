@@ -41,7 +41,7 @@ Timestamps submitted to the API must include a timezone (`Z` or an offset); they
 3. Restart/recreate the app: `docker compose up -d --force-recreate app`.
 4. In Settings & cameras, add/edit a camera with source **Frigate**, the exact Frigate camera key (e.g. `counter`), and the transaction register. Edit the sample camera if you do not want its synthetic context alongside real footage.
 
-The adapter reads `/api/events` and requests `/api/{camera}/start/{start}/end/{end}/clip.mp4`. Video is streamed through the backend, including byte-range requests. Event pagination includes events that started before the review window; scanning is capped at 10,000 retained events per camera and shows an error if exceeded. This simple approach is suitable for a small POC; continuous event ingestion with a local index is the next step for larger retention.
+The adapter reads `/api/events` and requests `/api/{camera}/start/{start}/end/{end}/clip.mp4`. Video is streamed through the backend as a complete generated clip; browser byte-range headers are not forwarded to the dynamic Frigate endpoint. Event pagination includes events that started before the review window; scanning is capped at 10,000 retained events per camera and shows an error if exceeded. This simple approach is suitable for a small POC; continuous event ingestion with a local index is the next step for larger retention.
 
 Frigate recordings must cover the requested window. Detection events alone do not guarantee a recording exists. Missing footage and unavailable sources appear in the review page. Some browsers, especially iOS Safari, may require an HLS adapter; the current real-camera player uses MP4. Live RTSP and authenticated Frigate behavior remain to be verified with your hardware.
 
@@ -102,3 +102,5 @@ Plug in one real camera and a POS export, measure clock drift, and manually revi
 ## Connected local sample
 
 This checkout now mounts `samples/` read-only into Frigate and loops `barista-solo.mp4` as `counter`. The local `.env` points the app to `http://frigate:5000`. Run `docker compose --profile camera up -d` to start it. Create transactions using the current replay time and wait for the after-window to finish before reviewing. Stop the replay with `docker compose stop frigate`; it records continuously while running.
+
+Verified the sample replay against Frigate 0.16.2: person events, persisted recordings, and a full approximately 60-second MP4 through the backend. Allow extra time for recording segments to be indexed after the window ends.

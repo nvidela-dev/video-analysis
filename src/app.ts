@@ -36,7 +36,9 @@ export function createApp(store:Store,options:{frigateUrl?:string;frigateToken?:
   if(c.source==='mock')return res.redirect('/mock.webm');
   if(!frigate)return res.status(503).json({error:'Frigate is not configured'});
   const w=videoWindow(t.timestamp,store.state.settings.beforeSeconds,store.state.settings.afterSeconds,c.offsetSeconds);
-  const headers:Record<string,string>={...frigate.headers()};if(req.headers.range)headers.Range=req.headers.range;
+  // Frigate generates this clip dynamically. Forwarding browser Range headers
+  // can produce a partial generated MP4 with misleading duration. Stream it whole.
+  const headers:Record<string,string>={...frigate.headers()};
   const controller=new AbortController();req.on('aborted',()=>controller.abort());res.on('close',()=>controller.abort());
   const response=await fetch(frigate.url(frigate.clipPath(c,w)),{headers,signal:AbortSignal.any([controller.signal,AbortSignal.timeout(120000)])});
   if(!response.ok||!response.body)return res.status(502).json({error:`Frigate clip unavailable (${response.status}); check retained recordings`});
