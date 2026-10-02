@@ -1,0 +1,28 @@
+services:
+  app:
+    build: .
+    ports: ["127.0.0.1:3040:3040"]
+    environment:
+      FRIGATE_URL: ${FRIGATE_URL:-}
+      FRIGATE_TOKEN: ${FRIGATE_TOKEN:-}
+    volumes: ["ledger-data:/app/data"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3040/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  frigate:
+    profiles: ["camera"]
+    image: ghcr.io/blakeblackshear/frigate:0.16.2
+    shm_size: "256mb"
+    ports: ["127.0.0.1:5000:5000"]
+    volumes:
+      - ./frigate/config.yml:/config/config.yml:ro
+      - frigate-media:/media/frigate
+      - frigate-db:/config/db
+    restart: unless-stopped
+volumes:
+  ledger-data:
+  frigate-media:
+  frigate-db:

@@ -1,0 +1,25 @@
+database:
+  path: /config/db/frigate.db
+# Replace the RTSP URL before enabling the camera profile.
+mqtt:
+  enabled: false
+detectors:
+  cpu:
+    type: cpu
+cameras:
+  counter:
+    ffmpeg:
+      inputs:
+        - path: rtsp://REPLACE_WITH_CAMERA_STREAM
+          roles: [detect, record]
+    detect:
+      width: 640
+      height: 360
+      fps: 5
+    objects:
+      track: [person]
+    record:
+      enabled: true
+      retain:
+        days: 2
+        mode: all
