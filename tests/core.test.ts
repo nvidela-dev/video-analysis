@@ -33,3 +33,13 @@ test('activity counts distinct concurrent person tracks, clips intervals and pre
  assert.deepEqual(result,{personTracks:3,peakConcurrentTracks:3,tracksAtTransaction:2,zonesVisited:['behind_counter','doorway']});
  assert.equal(activitySummary([],{start:0,end:1},0).peakConcurrentTracks,0);
 });
+test('live endpoint excludes ended events and preserves recent history',async()=>{
+ const {createServer}=await import('node:http');
+ const rows=[{id:'ongoing',start_time:100,end_time:null,label:'person',zones:['frame_left'],data:{score:0.8}},{id:'ended',start_time:90,end_time:110,label:'person',zones:[]},{id:'car',start_time:100,end_time:null,label:'car'}];
+ const server=createServer((_req,res)=>{res.setHeader('Content-Type','application/json');res.end(JSON.stringify(rows));});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));
+ try{const address=server.address() as import('node:net').AddressInfo;const dir=await mkdtemp(join(tmpdir(),'ledger-live-'));const store=new Store(join(dir,'state.json'));await store.init();store.state.cameras[0].source='frigate';
+ const result=await request(createApp(store,{frigateUrl:`http://127.0.0.1:${address.port}`})).get('/api/cameras/counter/live').expect(200);
+ assert.deepEqual(result.body.tracks.map((t:any)=>t.id),['ongoing']);assert.deepEqual(result.body.recent.map((t:any)=>t.id),['ongoing','ended']);assert.equal(result.body.tracks[0].score,0.8);
+ await request(createApp(store)).get('/api/cameras/missing/live').expect(404);
+ }finally{await new Promise<void>((r,e)=>server.close(err=>err?e(err):r()));}
+});

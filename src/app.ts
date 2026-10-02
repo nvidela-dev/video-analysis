@@ -26,12 +26,17 @@ export function createApp(store:Store,options:{frigateUrl?:string;frigateToken?:
   if(c.source!=='frigate'||!frigate)return res.status(503).json({error:'Live analysis requires a configured Frigate camera'});
   const r=await fetch(frigate.url('/events?'+new URLSearchParams({camera:c.frigateName,in_progress:'1',limit:'100',include_thumbnails:'0'})),{headers:frigate.headers(),signal:AbortSignal.timeout(10000)});
   if(!r.ok)return res.status(502).json({error:'Frigate live events unavailable'});
-  const rows=await r.json();res.json({timestamp:new Date().toISOString(),tracks:rows.filter((e:any)=>e.label==='person').map((e:any)=>({id:e.id,start:e.start_time,zonesVisited:e.zones??[],score:e.data?.score??null})),limit:100});
+  const eventSchema=z.array(z.object({id:z.string(),start_time:z.number(),end_time:z.number().nullable().optional(),label:z.string(),zones:z.array(z.string()).optional(),data:z.object({score:z.number().nullable().optional()}).passthrough().optional()}));
+  const rows=eventSchema.parse(await r.json());
+  const recentResponse=await fetch(frigate.url('/events?'+new URLSearchParams({camera:c.frigateName,limit:'12',include_thumbnails:'0'})),{headers:frigate.headers(),signal:AbortSignal.timeout(10000)});
+  if(!recentResponse.ok)return res.status(502).json({error:'Recent activity unavailable'});
+  const recent=eventSchema.parse(await recentResponse.json());
+  res.setHeader('Cache-Control','no-store');res.json({timestamp:new Date().toISOString(),tracks:rows.filter(e=>e.label==='person'&&e.end_time==null).map(e=>({id:e.id,start:e.start_time,zonesVisited:e.zones??[],score:e.data?.score??null})),recent:recent.filter(e=>e.label==='person').map(e=>({id:e.id,start:e.start_time,end:e.end_time??null,zonesVisited:e.zones??[]})),limit:100});
  });
  app.get('/api/cameras/:id/stream',async(req,res)=>{
   const c=store.state.cameras.find(c=>c.id===req.params.id);if(!c||c.source!=='frigate'||!frigate)return res.status(404).json({error:'Frigate camera not found'});
   const controller=new AbortController();req.on('aborted',()=>controller.abort());res.on('close',()=>controller.abort());
-  const r=await fetch(frigate.url('/'+encodeURIComponent(c.frigateName)+'?fps=5&bbox=1&motion=1&zones=1'),{headers:frigate.headers(),signal:controller.signal});
+  const r=await fetch(frigate.url('/'+encodeURIComponent(c.frigateName)+'?fps=5&bbox='+ (req.query.boxes==='0'?'0':'1') +'&motion=0&zones='+ (req.query.zones==='0'?'0':'1')),{headers:frigate.headers(),signal:controller.signal});
   if(!r.ok||!r.body)return res.status(502).json({error:'Live stream unavailable'});
   res.setHeader('Content-Type',r.headers.get('content-type')??'multipart/x-mixed-replace');res.setHeader('Cache-Control','no-store');
   await pipeline(Readable.fromWeb(r.body as any),res);
