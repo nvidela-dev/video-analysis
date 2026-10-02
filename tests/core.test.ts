@@ -6,7 +6,7 @@ import {join} from 'node:path';
 import request from 'supertest';
 import {Store} from '../src/store.js';
 import {createApp} from '../src/app.js';
-import {videoWindow,overlaps} from '../src/model.js';
+import {videoWindow,overlaps,activitySummary} from '../src/model.js';
 import {FrigateSource} from '../src/sources.js';
 test('window is UTC, asymmetric and applies positive camera offset',()=>{assert.deepEqual(videoWindow('1970-01-01T00:01:40Z',30,10,5),{start:75,end:115});assert.deepEqual(videoWindow('1970-01-01T01:01:40+01:00',30,10,5),{start:75,end:115});});
 test('overlap includes boundaries and ongoing events, excludes unrelated events',()=>{const e={id:'a',camera:'c',label:'person',start:10,end:30,zones:[],hasClip:false};assert.ok(overlaps(e,{start:30,end:40}));assert.ok(overlaps({...e,end:null},{start:100,end:110}));assert.ok(!overlaps(e,{start:31,end:40}));});
@@ -26,3 +26,10 @@ test('create, import validation, persistence, settings and missing camera flow',
 });
 test('Frigate adapter keeps long-running overlaps and filters ended events',async()=>{let called='';const fake=async(input:any)=>{called=String(input);return new Response(JSON.stringify([{id:'long',label:'person',start_time:1,end_time:120,zones:['counter'],has_clip:true},{id:'old',label:'person',start_time:1,end_time:20},{id:'active',label:'person',start_time:50,end_time:null}]));};const source=new FrigateSource('http://frigate:5000',undefined,fake as typeof fetch);const camera={id:'c',name:'c',source:'frigate' as const,frigateName:'counter',register:'1',offsetSeconds:0};const events=await source.events(camera,{start:100,end:130});assert.deepEqual(events.map(e=>e.id),['long','active']);assert.ok(!called.includes('after='));assert.equal(source.clipPath(camera,{start:100,end:130}),'/counter/start/100/end/130/clip.mp4');});
 test('Frigate failure is displayed per camera without losing transaction',async()=>{const dir=await mkdtemp(join(tmpdir(),'ledger-'));const store=new Store(join(dir,'state.json'));await store.init();store.state.cameras[0].source='frigate';const result=await request(createApp(store)).get('/api/transactions/demo-1').expect(200);assert.match(result.body.matches[0].error,/not configured/);assert.equal(result.body.transaction.id,'demo-1');});
+
+test('activity counts distinct concurrent person tracks, clips intervals and preserves boundaries',()=>{
+ const e={id:'a',camera:'c',label:'person',start:1,end:10,zones:['behind_counter'],hasClip:false};
+ const result=activitySummary([e,e,{...e,id:'b',start:5,end:null,zones:['doorway']},{...e,id:'c',start:10,end:11},{...e,id:'car',label:'car'}],{start:3,end:12},6);
+ assert.deepEqual(result,{personTracks:3,peakConcurrentTracks:3,tracksAtTransaction:2,zonesVisited:['behind_counter','doorway']});
+ assert.equal(activitySummary([],{start:0,end:1},0).peakConcurrentTracks,0);
+});

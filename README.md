@@ -106,3 +106,11 @@ This checkout now mounts `samples/` read-only into Frigate and loops `barista-so
 Verified the sample replay against Frigate 0.16.2: person events, persisted recordings, and a full approximately 60-second MP4 through the backend. Allow extra time for recording segments to be indexed after the window ends.
 
 Frigate streams fragmented MP4: the browser can initially report a short duration, then extend it as it receives the clip. Verified accelerated browser playback reaches the full 61.9-second test clip without errors.
+
+## Spatial context and live analysis
+
+Open `http://localhost:3040/#live` for the detection stream with boxes and zone polygons, active person track IDs, confidence scores and zones visited. The event panel refreshes every three seconds; counts are active detector tracks (up to 100), not unique individuals. The stream is video-only, five frames per second. Leaving the page closes the stream and stops polling.
+
+The sample camera has three initial polygons: `behind_counter` (staff aisle), `customer_side` (floor to the right of the bar), and `doorway`. These names describe physical locations, not roles or identities. Zones use bounding-box bottom centers with three-frame inertia. Partial occlusion can move that point, so inspect overlays before interpreting results. These polygons are tailored to the observed sample framing and must be adjusted for any camera movement or shot change. Old detections keep their original metadata; zones apply going forward.
+
+Transaction detail now includes distinct overlapping person tracks, estimated peak concurrent tracks and tracks active at the transaction timestamp. Track fragmentation and false detections can inflate counts. Zones visited refer to the entire overlapping event, not necessarily the transaction instant or even the window. Precise zone entry/exit timestamps require event-lifecycle ingestion, which is not implemented yet. Presence in a zone never implies payment or product handoff.
