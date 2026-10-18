@@ -120,3 +120,9 @@ Transaction detail now includes distinct overlapping person tracks, estimated pe
 Live analysis now separates ongoing detector tracks from the 12 latest retained person events. Track cards show age, temporary ID, confidence and lifetime regions visited. Toggle person boxes/regions, reconnect the stream, or pause this view (Frigate continues recording). Activity failures replace the update status with an explicit stale-result message. The transaction shortcut opens a manual form with the camera's register and current replay timestamp; it does not fabricate a sale or amount. Recent-event history comes from Frigate and survives page reloads while retained there.
 
 Browser tests also exercise pause/resume polling, overlay controls and transaction prefill. The live HTTP test checks ended-event exclusion and recent history independently of actual camera hardware. The browser's video-connected badge confirms a decoded image, not continuous frame freshness; use reconnect if the image freezes.
+
+## Implementation plan
+
+Open [the local business implementation plan](docs/transaction-reconciliation-plan.html) in a browser for transaction reconciliation, fixed-camera setup, local operating costs and optional person continuity research. This is a self-contained HTML document.
+
+The real sample video is intentionally not included in Git. To use the optional camera profile, place your own video at `samples/barista-solo.mp4` or change the Frigate input configuration. The default mock app runs without it.
